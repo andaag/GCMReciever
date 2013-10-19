@@ -7,6 +7,7 @@ import android.app.Activity;
 import android.app.LoaderManager;
 import android.content.Context;
 import android.content.CursorLoader;
+import android.content.Intent;
 import android.content.Loader;
 import android.database.Cursor;
 import android.os.Bundle;
@@ -16,6 +17,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.CursorAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -27,9 +29,10 @@ import no.codebox.gcmreciever.db.MessageContentProvider;
 import no.codebox.gcmreciever.events.LogMessage;
 import no.codebox.gcmreciever.events.RegisterEvent;
 import no.codebox.gcmreciever.helpers.GCMRegister;
+import no.codebox.gcmreciever.helpers.IntentCreator;
 import no.codebox.gcmreciever.helpers.JsonParser;
 
-public class MainActivity extends Activity implements LoaderManager.LoaderCallbacks<Cursor> {
+public class MainActivity extends Activity implements LoaderManager.LoaderCallbacks<Cursor>, AdapterView.OnItemClickListener {
     private static final String TAG = MainActivity.class.getSimpleName();
 
     private final Bus bus = new Bus();
@@ -51,6 +54,7 @@ public class MainActivity extends Activity implements LoaderManager.LoaderCallba
         getLoaderManager().initLoader(0, null, this);
         messageAdapter = new MessageAdapter(this);
         listView.setAdapter(messageAdapter);
+        listView.setOnItemClickListener(this);
     }
 
     @Override
@@ -80,7 +84,7 @@ public class MainActivity extends Activity implements LoaderManager.LoaderCallba
 
     @Override
     public Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
-        return new CursorLoader(this, MessageContentProvider.CONTENT_URI, new String[]{"_id, timestamp", "json"}, null, null, "timestamp ASC");
+        return new CursorLoader(this, MessageContentProvider.CONTENT_URI, new String[]{"_id, timestamp", "json"}, null, null, "timestamp DESC");
     }
 
     @Override
@@ -96,6 +100,11 @@ public class MainActivity extends Activity implements LoaderManager.LoaderCallba
     @Override
     public void onLoaderReset(Loader<Cursor> objectLoader) {
         messageAdapter.swapCursor(null);
+    }
+
+    @Override
+    public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+        messageAdapter.click(i);
     }
 
     private class MessageAdapter extends CursorAdapter {
@@ -129,11 +138,46 @@ public class MainActivity extends Activity implements LoaderManager.LoaderCallba
         }
 
         @Override
-        public void bindView(View view, Context context, Cursor cursor) {
-            ViewHolder viewHolder = (ViewHolder) view.getTag();
-            int IDX_DATA = cursor.getColumnIndex("json");
+        public boolean isEnabled(int position) {
             try {
-                Map data = (Map) JsonParser.parseBlock(cursor.getString(IDX_DATA));
+                return hasIntent(getData(position));
+            } catch (IOException e) {
+                return false;
+            }
+        }
+
+        private boolean hasIntent(Map data) {
+            return (data != null && data.containsKey("intent"));
+        }
+
+        private Map getData(int position) throws IOException {
+            Cursor cursor = getCursor();
+            if (cursor == null) {
+                return null;
+            }
+            cursor.moveToPosition(position);
+            int IDX_DATA = cursor.getColumnIndex("json");
+            return (Map) JsonParser.parseBlock(cursor.getString(IDX_DATA));
+        }
+
+        private void click(int position) {
+            assert isEnabled(position);
+            try {
+                Map data = (Map) getData(position).get("intent");
+                Intent intent = IntentCreator.createIntent(data);
+                startActivity(intent);
+            } catch (IOException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+
+        @Override
+        public void bindView(View view, Context context, Cursor cursor) {
+            int IDX_DATA = cursor.getColumnIndex("json");
+            ViewHolder viewHolder = (ViewHolder) view.getTag();
+
+            try {
+                Map data = getData(cursor.getPosition());
                 boolean hasTitle = renderKey(viewHolder.title, "title", data);
                 boolean hasMessage = renderKey(viewHolder.message, "message", data);
                 if (!hasMessage && !hasTitle) {
@@ -146,7 +190,6 @@ public class MainActivity extends Activity implements LoaderManager.LoaderCallba
             }
 
         }
-
     }
 
     private class BusEvents {

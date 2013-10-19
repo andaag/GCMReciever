@@ -10,7 +10,7 @@ public class MessageSqliteDb extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "gcmregister.db";
     private static final String CREATE_TABLE_TUTORIALS = "CREATE TABLE messages"
             + " (_id INTEGER PRIMARY KEY AUTOINCREMENT, " +
-            "timestamp INTEGER, title TEXT NOT NULL, message TEXT, icon INTEGER, expires INTEGER);";
+            "timestamp INTEGER, json TEXT, expires INTEGER);";
 
     public MessageSqliteDb(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);

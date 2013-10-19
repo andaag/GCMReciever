@@ -9,10 +9,15 @@ public class MessageAsyncHandler extends AsyncQueryHandler {
         super(cr);
     }
 
-    public void insertMessage(String title) {
+    public void insertMessage(String data, long expires) {
         ContentValues contentValues = new ContentValues();
         contentValues.put("timestamp", System.currentTimeMillis());
-        contentValues.put("title", title);
+        contentValues.put("json", data);
+        contentValues.put("expires", expires);
         startInsert(0, null, MessageContentProvider.CONTENT_URI, contentValues);
+    }
+
+    public void clearOld() {
+        //@todo : clear expired stuff (or messages > #100?)
     }
 }

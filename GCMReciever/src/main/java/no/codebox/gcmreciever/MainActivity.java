@@ -1,5 +1,8 @@
 package no.codebox.gcmreciever;
 
+import java.io.IOException;
+import java.util.Map;
+
 import android.app.Activity;
 import android.app.LoaderManager;
 import android.content.Context;
@@ -24,6 +27,7 @@ import no.codebox.gcmreciever.db.MessageContentProvider;
 import no.codebox.gcmreciever.events.LogMessage;
 import no.codebox.gcmreciever.events.RegisterEvent;
 import no.codebox.gcmreciever.helpers.GCMRegister;
+import no.codebox.gcmreciever.helpers.JsonParser;
 
 public class MainActivity extends Activity implements LoaderManager.LoaderCallbacks<Cursor> {
     private static final String TAG = MainActivity.class.getSimpleName();
@@ -38,7 +42,7 @@ public class MainActivity extends Activity implements LoaderManager.LoaderCallba
         super.onCreate(savedInstanceState);
         bus.register(this);
         setContentView(R.layout.activity_main);
-        textView = (TextView) findViewById(R.id.output);
+        textView = (TextView) findViewById(R.id.info);
         ListView listView = (ListView) findViewById(android.R.id.list);
 
 
@@ -76,11 +80,16 @@ public class MainActivity extends Activity implements LoaderManager.LoaderCallba
 
     @Override
     public Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
-        return new CursorLoader(this, MessageContentProvider.CONTENT_URI, new String[]{"_id, timestamp", "title", "message", "icon", "expires"}, null, null, "timestamp ASC");
+        return new CursorLoader(this, MessageContentProvider.CONTENT_URI, new String[]{"_id, timestamp", "json"}, null, null, "timestamp ASC");
     }
 
     @Override
     public void onLoadFinished(Loader<Cursor> objectLoader, Cursor c) {
+        if (c == null || c.getCount() == 0) {
+            textView.setVisibility(View.VISIBLE);
+        } else {
+            textView.setVisibility(View.GONE);
+        }
         messageAdapter.swapCursor(c);
     }
 
@@ -102,15 +111,40 @@ public class MainActivity extends Activity implements LoaderManager.LoaderCallba
             View view = inflater.inflate(R.layout.row_messages, viewGroup, false);
             ViewHolder viewHolder = new ViewHolder();
             viewHolder.title = (TextView) view.findViewById(R.id.title);
+            viewHolder.message = (TextView) view.findViewById(R.id.message);
             view.setTag(viewHolder);
             return view;
+        }
+
+        private boolean renderKey(TextView view, String key, Map data) {
+            String msg = data.containsKey(key) ? data.get(key).toString() : null;
+            if (msg != null) {
+                view.setVisibility(View.VISIBLE);
+                view.setText(msg);
+                return true;
+            } else {
+                view.setVisibility(View.GONE);
+                return false;
+            }
         }
 
         @Override
         public void bindView(View view, Context context, Cursor cursor) {
             ViewHolder viewHolder = (ViewHolder) view.getTag();
-            int IDX_TITLE = cursor.getColumnIndex("title");
-            viewHolder.title.setText(cursor.getString(IDX_TITLE));
+            int IDX_DATA = cursor.getColumnIndex("json");
+            try {
+                Map data = (Map) JsonParser.parseBlock(cursor.getString(IDX_DATA));
+                boolean hasTitle = renderKey(viewHolder.title, "title", data);
+                boolean hasMessage = renderKey(viewHolder.message, "message", data);
+                if (!hasMessage && !hasTitle) {
+                    viewHolder.message.setText("Missing title and message in:\n" + cursor.getString(IDX_DATA));
+                    viewHolder.message.setVisibility(View.VISIBLE);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+                viewHolder.title.setText("Failed to parse json block " + cursor.getString(IDX_DATA));
+            }
+
         }
 
     }
@@ -140,5 +174,6 @@ public class MainActivity extends Activity implements LoaderManager.LoaderCallba
 
     private static class ViewHolder {
         public TextView title;
+        public TextView message;
     }
 }

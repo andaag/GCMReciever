@@ -1,6 +1,9 @@
 package no.codebox.gcmreciever.gcm;
 
 
+import java.io.IOException;
+import java.util.Map;
+
 import android.app.IntentService;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -14,6 +17,7 @@ import com.google.android.gms.gcm.GoogleCloudMessaging;
 import no.codebox.gcmreciever.MainActivity;
 import no.codebox.gcmreciever.R;
 import no.codebox.gcmreciever.db.MessageAsyncHandler;
+import no.codebox.gcmreciever.helpers.JsonParser;
 
 public class GcmIntentService extends IntentService {
     private static final String TAG = GcmIntentService.class.getSimpleName();
@@ -29,11 +33,9 @@ public class GcmIntentService extends IntentService {
     protected void onHandleIntent(Intent intent) {
         Bundle extras = intent.getExtras();
         GoogleCloudMessaging gcm = GoogleCloudMessaging.getInstance(this);
-        // The getMessageType() intent parameter must be the intent you received
-        // in your BroadcastReceiver.
         String messageType = gcm.getMessageType(intent);
 
-        if (!extras.isEmpty()) {  // has effect of unparcelling Bundle
+        if (!extras.isEmpty()) {
             MessageAsyncHandler messageAsyncHandler = new MessageAsyncHandler(getContentResolver());
             if (GoogleCloudMessaging.
                     MESSAGE_TYPE_SEND_ERROR.equals(messageType)) {
@@ -45,14 +47,20 @@ public class GcmIntentService extends IntentService {
                 // If it's a regular GCM message, do some work.
             } else if (GoogleCloudMessaging.
                     MESSAGE_TYPE_MESSAGE.equals(messageType)) {
-                // This loop represents the service doing some work.
-                // Post notification of received message.
-                messageAsyncHandler.insertMessage(extras.toString());
-                sendNotification("Received: " + extras.toString());
+
+                String rawData = extras.getString("data");
+                try {
+                    Map data = (Map) JsonParser.parseBlock(rawData);
+                    messageAsyncHandler.insertMessage(rawData, data.containsKey("expires") ? ((Number) data.get("expires")).longValue() : 0);
+                    sendNotification("Received: " + extras.toString());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    sendNotification("FAILED TO PARSE: " + extras.toString());
+                }
+
                 Log.i(TAG, "Received: " + extras.toString());
             }
         }
-        // Release the wake lock provided by the WakefulBroadcastReceiver.
         GcmBroadcastReceiver.completeWakefulIntent(intent);
     }
 

@@ -20,7 +20,7 @@ import no.codebox.gcmreciever.db.MessageAsyncHandler;
 import no.codebox.gcmreciever.helpers.JsonParser;
 
 public class GcmIntentService extends IntentService {
-    private static final String TAG = GcmIntentService.class.getSimpleName();
+    private static final String TAG = GcmIntentService.class.getName();
     public static final int NOTIFICATION_ID = 1;
     private NotificationManager mNotificationManager;
     private NotificationCompat.Builder builder;

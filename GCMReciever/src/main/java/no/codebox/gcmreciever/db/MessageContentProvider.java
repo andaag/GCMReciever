@@ -5,8 +5,11 @@ import android.content.ContentValues;
 import android.content.UriMatcher;
 import android.database.Cursor;
 import android.net.Uri;
+import android.util.Log;
 
 public class MessageContentProvider extends ContentProvider {
+    private static final String TAG = MessageContentProvider.class.getName();
+
     private static final String AUTHORITY = "no.codebox.gcmreciever.db.MessageContentProvider";
     private static final String MESSAGES_BASE_PATH = "messages";
 
@@ -37,6 +40,12 @@ public class MessageContentProvider extends ContentProvider {
         int uriType = sURIMatcher.match(uri);
         switch (uriType) {
             case MESSAGES_ID:
+                int deletedMessages = db.getWritableDatabase().delete("messages", "expires < ? and expires != 0", new String[]{Long.valueOf(System.currentTimeMillis()).toString()});
+                if (deletedMessages != 0) {
+                    Log.i(TAG, "Deleted " + deletedMessages + " messages (as it's older than " + System.currentTimeMillis() + ")");
+                    getContext().getContentResolver().notifyChange(uri, null);
+                }
+
                 Cursor cursor = db.getReadableDatabase().query("messages", projection, selection, selectionArgs, null, null, sortOrder);
                 cursor.setNotificationUri(getContext().getContentResolver(), uri);
                 return cursor;

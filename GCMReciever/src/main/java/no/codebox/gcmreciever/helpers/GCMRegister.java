@@ -19,10 +19,10 @@ import no.codebox.gcmreciever.events.LogMessage;
 import no.codebox.gcmreciever.events.RegisterEvent;
 
 public class GCMRegister {
+    private static final String TAG = GCMRegister.class.getName();
     private static final String PROPERTY_REG_ID = "registration_id";
     private static final String PROPERTY_APP_VERSION = "appVersion";
 
-    private static final String TAG = GCMRegister.class.getSimpleName();
     private static final int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
 
     private final Activity activity;

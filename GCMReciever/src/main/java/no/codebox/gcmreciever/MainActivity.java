@@ -33,7 +33,7 @@ import no.codebox.gcmreciever.helpers.IntentCreator;
 import no.codebox.gcmreciever.helpers.JsonParser;
 
 public class MainActivity extends Activity implements LoaderManager.LoaderCallbacks<Cursor>, AdapterView.OnItemClickListener {
-    private static final String TAG = MainActivity.class.getSimpleName();
+    private static final String TAG = MainActivity.class.getName();
 
     private final Bus bus = new Bus();
     private GCMRegister gcmRegister;

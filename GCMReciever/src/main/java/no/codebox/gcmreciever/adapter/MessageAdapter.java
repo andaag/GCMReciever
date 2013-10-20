@@ -9,6 +9,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CursorAdapter;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import no.codebox.gcmreciever.R;
@@ -31,6 +32,8 @@ public class MessageAdapter extends CursorAdapter {
         ViewHolder viewHolder = new ViewHolder();
         viewHolder.title = (TextView) view.findViewById(R.id.title);
         viewHolder.message = (TextView) view.findViewById(R.id.message);
+        viewHolder.iconFrame = view.findViewById(R.id.iconFrame);
+        viewHolder.icon = (ImageView) view.findViewById(R.id.icon);
         view.setTag(viewHolder);
         return view;
     }
@@ -78,6 +81,8 @@ public class MessageAdapter extends CursorAdapter {
                 viewHolder.message.setText("Missing title and message in:\n" + cursor.getString(IDX_DATA));
                 viewHolder.message.setVisibility(View.VISIBLE);
             }
+            viewHolder.icon.setImageResource(msg.getIcon());
+            viewHolder.iconFrame.setBackgroundColor(msg.getIconBackground(context.getResources()));
         } catch (IOException e) {
             e.printStackTrace();
             viewHolder.title.setText("Failed to parse json block " + cursor.getString(IDX_DATA));
@@ -89,5 +94,7 @@ public class MessageAdapter extends CursorAdapter {
     private static class ViewHolder {
         public TextView title;
         public TextView message;
+        public ImageView icon;
+        public View iconFrame;
     }
 }

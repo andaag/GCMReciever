@@ -4,6 +4,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
+import android.content.res.Resources;
+import android.graphics.Color;
+
 import no.codebox.gcmreciever.helpers.HashReader;
 import no.codebox.gcmreciever.helpers.JsonParser;
 
@@ -37,6 +40,30 @@ public class GCMMsg {
 
     public String getMessage() {
         return getString("message", null);
+    }
+
+    public int getIcon() {
+        String key = getString("icon", "info");
+        if (key.equals("alert")) {
+            return android.R.drawable.ic_dialog_alert;
+        }
+        return android.R.drawable.ic_dialog_info;
+    }
+
+    public int getIconBackground(Resources r) {
+        String colorString = getString("icon-background", null);
+        if (colorString != null) {
+            try {
+                int result = Color.parseColor(colorString);
+                /*if (!colorString.startsWith("#") || colorString.length() == 9) {
+                    //@todo : no alpha channel sent, lets add some
+                }*/
+                return result;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return r.getColor(android.R.color.holo_orange_light);
     }
 
     public String getNotificationString(String key, String defaultValue) {

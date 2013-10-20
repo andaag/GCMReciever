@@ -5,14 +5,16 @@ import java.util.Map;
 import android.content.Intent;
 import android.net.Uri;
 
+import no.codebox.gcmreciever.model.GCMMsg;
+
 public class IntentCreator {
-    public static Intent createIntent(Map data) {
+    public static Intent createIntent(GCMMsg msg) {
         Intent intent = new Intent();
-        intent.setType(data.containsKey("type") ? (String) data.get("type") : null);
-        intent.setData(data.containsKey("data") ? Uri.parse((String) data.get("data")) : null);
-        intent.setClassName((String) data.get("packagename"), (String) data.get("classname"));
-        if (data.containsKey("extras")) {
-            Map<String, Object> extras = (Map<String, Object>) data.get("extras");
+        intent.setType(msg.getIntentString("type", null));
+        intent.setData(msg.getIntentString("data", null) != null ? Uri.parse(msg.getIntentString("data", null)) : null);
+        intent.setClassName(msg.getIntentString("packagename", null), msg.getIntentString("classname", null));
+        if (msg.containsKey("extras")) {
+            Map<String, Object> extras = (Map<String, Object>) msg.getRaw("extras");
             for (String key : extras.keySet()) {
                 Object value = extras.get(key);
                 if (value instanceof Number) {

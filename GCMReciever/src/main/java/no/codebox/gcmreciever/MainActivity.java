@@ -1,7 +1,6 @@
 package no.codebox.gcmreciever;
 
 import java.io.IOException;
-import java.util.Map;
 
 import android.app.Activity;
 import android.app.LoaderManager;
@@ -30,7 +29,7 @@ import no.codebox.gcmreciever.events.LogMessage;
 import no.codebox.gcmreciever.events.RegisterEvent;
 import no.codebox.gcmreciever.helpers.GCMRegister;
 import no.codebox.gcmreciever.helpers.IntentCreator;
-import no.codebox.gcmreciever.helpers.JsonParser;
+import no.codebox.gcmreciever.model.GCMMsg;
 
 public class MainActivity extends Activity implements LoaderManager.LoaderCallbacks<Cursor>, AdapterView.OnItemClickListener {
     private static final String TAG = MainActivity.class.getName();
@@ -125,46 +124,30 @@ public class MainActivity extends Activity implements LoaderManager.LoaderCallba
             return view;
         }
 
-        private boolean renderKey(TextView view, String key, Map data) {
-            String msg = data.containsKey(key) ? data.get(key).toString() : null;
-            if (msg != null) {
-                view.setVisibility(View.VISIBLE);
-                view.setText(msg);
-                return true;
-            } else {
-                view.setVisibility(View.GONE);
-                return false;
-            }
-        }
-
         @Override
         public boolean isEnabled(int position) {
             try {
-                return hasIntent(getData(position));
+                return getData(position).hasIntent();
             } catch (IOException e) {
                 return false;
             }
         }
 
-        private boolean hasIntent(Map data) {
-            return (data != null && data.containsKey("intent"));
-        }
-
-        private Map getData(int position) throws IOException {
+        private GCMMsg getData(int position) throws IOException {
             Cursor cursor = getCursor();
             if (cursor == null) {
                 return null;
             }
             cursor.moveToPosition(position);
             int IDX_DATA = cursor.getColumnIndex("json");
-            return (Map) JsonParser.parseBlock(cursor.getString(IDX_DATA));
+            return new GCMMsg(cursor.getString(IDX_DATA));
         }
 
         private void click(int position) {
             assert isEnabled(position);
             try {
-                Map data = (Map) getData(position).get("intent");
-                Intent intent = IntentCreator.createIntent(data);
+                GCMMsg msg = getData(position);
+                Intent intent = IntentCreator.createIntent(msg);
                 startActivity(intent);
             } catch (IOException e) {
                 throw new IllegalStateException(e);
@@ -177,10 +160,10 @@ public class MainActivity extends Activity implements LoaderManager.LoaderCallba
             ViewHolder viewHolder = (ViewHolder) view.getTag();
 
             try {
-                Map data = getData(cursor.getPosition());
-                boolean hasTitle = renderKey(viewHolder.title, "title", data);
-                boolean hasMessage = renderKey(viewHolder.message, "message", data);
-                if (!hasMessage && !hasTitle) {
+                GCMMsg msg = getData(cursor.getPosition());
+                viewHolder.title.setText(msg.getTitle());
+                viewHolder.message.setText(msg.getString("message", ""));
+                if (viewHolder.title.getText().length() == 0 && viewHolder.message.getText().length() == 0) {
                     viewHolder.message.setText("Missing title and message in:\n" + cursor.getString(IDX_DATA));
                     viewHolder.message.setVisibility(View.VISIBLE);
                 }

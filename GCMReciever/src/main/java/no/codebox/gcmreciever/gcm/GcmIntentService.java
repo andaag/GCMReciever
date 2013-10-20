@@ -1,10 +1,8 @@
 package no.codebox.gcmreciever.gcm;
 
 
-import java.io.IOException;
-import java.util.Map;
-
 import android.app.IntentService;
+import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
@@ -17,13 +15,10 @@ import com.google.android.gms.gcm.GoogleCloudMessaging;
 import no.codebox.gcmreciever.MainActivity;
 import no.codebox.gcmreciever.R;
 import no.codebox.gcmreciever.db.MessageAsyncHandler;
-import no.codebox.gcmreciever.helpers.JsonParser;
+import no.codebox.gcmreciever.model.GCMMsg;
 
 public class GcmIntentService extends IntentService {
     private static final String TAG = GcmIntentService.class.getName();
-    public static final int NOTIFICATION_ID = 1;
-    private NotificationManager mNotificationManager;
-    private NotificationCompat.Builder builder;
 
     public GcmIntentService() {
         super("GcmIntentService");
@@ -39,24 +34,18 @@ public class GcmIntentService extends IntentService {
             MessageAsyncHandler messageAsyncHandler = new MessageAsyncHandler(getContentResolver());
             if (GoogleCloudMessaging.
                     MESSAGE_TYPE_SEND_ERROR.equals(messageType)) {
-                sendNotification("Send error: " + extras.toString());
+                assert false;
             } else if (GoogleCloudMessaging.
                     MESSAGE_TYPE_DELETED.equals(messageType)) {
-                sendNotification("Deleted messages on server: " +
-                        extras.toString());
+                assert false;
                 // If it's a regular GCM message, do some work.
             } else if (GoogleCloudMessaging.
                     MESSAGE_TYPE_MESSAGE.equals(messageType)) {
 
-                String rawData = extras.getString("data");
-                try {
-                    Map data = (Map) JsonParser.parseBlock(rawData);
-                    messageAsyncHandler.insertMessage(rawData, data.containsKey("expires") ? ((Number) data.get("expires")).longValue() : 0);
-                    sendNotification("Received: " + extras.toString());
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    sendNotification("FAILED TO PARSE: " + extras.toString());
-                }
+                String raw = extras.getString("data");
+                GCMMsg gcmMsg = new GCMMsg(raw);
+                messageAsyncHandler.insertMessage(gcmMsg, raw);
+                sendNotification(gcmMsg);
 
                 Log.i(TAG, "Received: " + extras.toString());
             }
@@ -64,25 +53,48 @@ public class GcmIntentService extends IntentService {
         GcmBroadcastReceiver.completeWakefulIntent(intent);
     }
 
-    // Put the message into a notification and post it.
-    // This is just one simple example of what you might choose to do with
-    // a GCM message.
-    private void sendNotification(String msg) {
-        mNotificationManager = (NotificationManager)
+    private void sendNotification(GCMMsg msg) {
+        NotificationManager notificationManager = (NotificationManager)
                 this.getSystemService(Context.NOTIFICATION_SERVICE);
 
         PendingIntent contentIntent = PendingIntent.getActivity(this, 0,
                 new Intent(this, MainActivity.class), 0);
+        int notificationDefaults = Notification.DEFAULT_ALL;
 
-        NotificationCompat.Builder mBuilder =
+        NotificationCompat.Builder builder =
                 new NotificationCompat.Builder(this)
                         .setSmallIcon(R.drawable.ic_launcher)
                         .setContentTitle("GCM Notification")
-                        .setStyle(new NotificationCompat.BigTextStyle()
-                                .bigText(msg))
-                        .setContentText(msg);
+                        .setAutoCancel(true)
+                        .setTicker(msg.getTitle());
 
-        mBuilder.setContentIntent(contentIntent);
-        mNotificationManager.notify(NOTIFICATION_ID, mBuilder.build());
+        if (msg.getMessage() != null) {
+            builder.setContentText(msg.getMessage()).setStyle(new NotificationCompat.BigTextStyle()
+                    .bigText(msg.getMessage()));
+        }
+
+        boolean soundEnabled = (notificationDefaults & Notification.DEFAULT_SOUND) == Notification.DEFAULT_SOUND;
+        if (msg.getNotificationBoolean("sound", true) != soundEnabled) {
+            notificationDefaults |= Notification.DEFAULT_SOUND;
+        }
+
+        boolean vibrateEnabled = (notificationDefaults & Notification.DEFAULT_VIBRATE) == Notification.DEFAULT_VIBRATE;
+        if (msg.getNotificationBoolean("vibrate", true) != vibrateEnabled) {
+            notificationDefaults |= Notification.DEFAULT_VIBRATE;
+        }
+
+        int progress = msg.getNotificationNumber("progress", -1).intValue();
+        if (progress != -1) {
+            builder.setProgress(100, progress, progress == 0);
+        }
+
+        int priority = msg.getNotificationNumber("priority", Integer.MIN_VALUE).intValue();
+        if (priority != Integer.MIN_VALUE) {
+            builder.setPriority(priority);
+        }
+
+        builder.setDefaults(notificationDefaults);
+        builder.setContentIntent(contentIntent);
+        notificationManager.notify(msg.getNotificationKey(), builder.build());
     }
 }

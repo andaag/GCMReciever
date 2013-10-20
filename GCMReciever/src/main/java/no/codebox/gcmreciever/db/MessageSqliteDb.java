@@ -10,7 +10,7 @@ public class MessageSqliteDb extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "gcmregister.db";
     private static final String CREATE_TABLE_TUTORIALS = "CREATE TABLE messages"
             + " (_id INTEGER PRIMARY KEY AUTOINCREMENT, " +
-            "timestamp INTEGER, json TEXT, expires INTEGER);";
+            "timestamp INTEGER, `collapse-key` TEXT UNIQUE, json TEXT, expires INTEGER);";
 
     public MessageSqliteDb(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -27,6 +27,6 @@ public class MessageSqliteDb extends SQLiteOpenHelper {
     }
 
     public long insert(ContentValues contentValues) {
-        return getWritableDatabase().insert("messages", "null", contentValues);
+        return getWritableDatabase().insertWithOnConflict("messages", "null", contentValues, SQLiteDatabase.CONFLICT_REPLACE);
     }
 }

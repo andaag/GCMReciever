@@ -40,17 +40,21 @@ public class MessageContentProvider extends ContentProvider {
         int uriType = sURIMatcher.match(uri);
         switch (uriType) {
             case MESSAGES_ID:
-                int deletedMessages = db.getWritableDatabase().delete("messages", "expires < ? and expires != 0", new String[]{Long.valueOf(System.currentTimeMillis()).toString()});
-                if (deletedMessages != 0) {
-                    Log.i(TAG, "Deleted " + deletedMessages + " messages (as it's older than " + System.currentTimeMillis() + ")");
-                    getContext().getContentResolver().notifyChange(uri, null);
-                }
-
+                trimDb();
                 Cursor cursor = db.getReadableDatabase().query("messages", projection, selection, selectionArgs, null, null, sortOrder);
                 cursor.setNotificationUri(getContext().getContentResolver(), uri);
                 return cursor;
             default:
                 throw new IllegalStateException("Unknown id");
+        }
+    }
+
+    private void trimDb() {
+        int deletedMessages = db.getWritableDatabase().delete("messages", "expires < ? and expires != 0", new String[]{Long.valueOf(System.currentTimeMillis()).toString()});
+        //@todo : trim length here with deletedMessages += trim msg.
+        if (deletedMessages != 0) {
+            Log.i(TAG, "trimdb deleted " + deletedMessages + " messages");
+            getContext().getContentResolver().notifyChange(CONTENT_URI, null);
         }
     }
 
@@ -62,6 +66,7 @@ public class MessageContentProvider extends ContentProvider {
     @Override
     public Uri insert(Uri uri, ContentValues contentValues) {
         int uriType = sURIMatcher.match(uri);
+        trimDb();
         switch (uriType) {
             case MESSAGES_ID:
                 long insertId = db.insert(contentValues);

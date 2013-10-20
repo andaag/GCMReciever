@@ -38,6 +38,7 @@ def createMsg(title, message=None, delay_while_idle=False, expires=None, icon=No
 		result["message"] = str(message)
 	if expires:
 		result["expires"] = int(expires)
+		result["expires"] = time_now + (result["expires"] * 1000)
 	if icon:
 		result["icon"] = str(icon)
 		assert result["icon"] == "alert" or result["icon"] == "info"
@@ -56,7 +57,7 @@ def createMsg(title, message=None, delay_while_idle=False, expires=None, icon=No
 
 
 #msg = get_intent_message()
-in_two_minutes = time_now + (1000 * 60 * 2)
+in_two_minutes = 60 * 2
 msg = createMsg("This is a test 2!", message="This is much more detailed info", 
 	delay_while_idle=False, #if true waits until device is woken up to recieve message.
 	expires=in_two_minutes, #NB : expires is cleared on start (before showing content) + on push msg recieved. Meaning if you recieve an old message and nothing else, one can use adb backup to pull it directly from the database.
@@ -92,7 +93,7 @@ def sendMsg(msg, verbose=False):
 	time_to_live = None
 
 	if "expires" in msg:
-		time_to_live = msg["expires"]-time_now
+		time_to_live = msg["expires"] - time_now
 	del msg["delay_while_idle"]
 
 	collapse_key = None

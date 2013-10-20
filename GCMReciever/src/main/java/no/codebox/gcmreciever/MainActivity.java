@@ -1,35 +1,25 @@
 package no.codebox.gcmreciever;
 
-import java.io.IOException;
-
 import android.app.Activity;
 import android.app.LoaderManager;
-import android.content.Context;
 import android.content.CursorLoader;
-import android.content.Intent;
 import android.content.Loader;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.AdapterView;
-import android.widget.CursorAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.squareup.otto.Bus;
 import com.squareup.otto.Subscribe;
+import no.codebox.gcmreciever.adapter.MessageAdapter;
 import no.codebox.gcmreciever.db.MessageContentProvider;
 import no.codebox.gcmreciever.events.LogMessage;
 import no.codebox.gcmreciever.events.RegisterEvent;
 import no.codebox.gcmreciever.helpers.GCMRegister;
-import no.codebox.gcmreciever.helpers.IntentCreator;
-import no.codebox.gcmreciever.model.GCMMsg;
 
 public class MainActivity extends Activity implements LoaderManager.LoaderCallbacks<Cursor>, AdapterView.OnItemClickListener {
     private static final String TAG = MainActivity.class.getName();
@@ -62,24 +52,20 @@ public class MainActivity extends Activity implements LoaderManager.LoaderCallba
         gcmRegister.registerIfNeccesary();
     }
 
-    @Override
+/*    @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.main, menu);
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
         switch (item.getItemId()) {
             case R.id.action_settings:
                 return true;
         }
         return super.onOptionsItemSelected(item);
-    }
+    }*/
 
     @Override
     public Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
@@ -106,75 +92,6 @@ public class MainActivity extends Activity implements LoaderManager.LoaderCallba
         messageAdapter.click(i);
     }
 
-    private class MessageAdapter extends CursorAdapter {
-        private LayoutInflater inflater;
-
-        public MessageAdapter(Context context) {
-            super(context, null, false);
-            inflater = LayoutInflater.from(context);
-        }
-
-        @Override
-        public View newView(Context context, Cursor cursor, ViewGroup viewGroup) {
-            View view = inflater.inflate(R.layout.row_messages, viewGroup, false);
-            ViewHolder viewHolder = new ViewHolder();
-            viewHolder.title = (TextView) view.findViewById(R.id.title);
-            viewHolder.message = (TextView) view.findViewById(R.id.message);
-            view.setTag(viewHolder);
-            return view;
-        }
-
-        @Override
-        public boolean isEnabled(int position) {
-            try {
-                return getData(position).hasIntent();
-            } catch (IOException e) {
-                return false;
-            }
-        }
-
-        private GCMMsg getData(int position) throws IOException {
-            Cursor cursor = getCursor();
-            if (cursor == null) {
-                return null;
-            }
-            cursor.moveToPosition(position);
-            int IDX_DATA = cursor.getColumnIndex("json");
-            return new GCMMsg(cursor.getString(IDX_DATA));
-        }
-
-        private void click(int position) {
-            assert isEnabled(position);
-            try {
-                GCMMsg msg = getData(position);
-                Intent intent = IntentCreator.createIntent(msg);
-                startActivity(intent);
-            } catch (IOException e) {
-                throw new IllegalStateException(e);
-            }
-        }
-
-        @Override
-        public void bindView(View view, Context context, Cursor cursor) {
-            int IDX_DATA = cursor.getColumnIndex("json");
-            ViewHolder viewHolder = (ViewHolder) view.getTag();
-
-            try {
-                GCMMsg msg = getData(cursor.getPosition());
-                viewHolder.title.setText(msg.getTitle());
-                viewHolder.message.setText(msg.getString("message", ""));
-                if (viewHolder.title.getText().length() == 0 && viewHolder.message.getText().length() == 0) {
-                    viewHolder.message.setText("Missing title and message in:\n" + cursor.getString(IDX_DATA));
-                    viewHolder.message.setVisibility(View.VISIBLE);
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-                viewHolder.title.setText("Failed to parse json block " + cursor.getString(IDX_DATA));
-            }
-
-        }
-    }
-
     private class BusEvents {
         public BusEvents() {
             bus.register(this);
@@ -198,8 +115,4 @@ public class MainActivity extends Activity implements LoaderManager.LoaderCallba
         }
     }
 
-    private static class ViewHolder {
-        public TextView title;
-        public TextView message;
-    }
 }

@@ -42,6 +42,8 @@ public class GcmIntentService extends IntentService {
             } else if (GoogleCloudMessaging.
                     MESSAGE_TYPE_MESSAGE.equals(messageType)) {
 
+                //@todo : if expired then dont show.
+
                 String raw = extras.getString("data");
                 GCMMsg gcmMsg = new GCMMsg(raw);
                 messageAsyncHandler.insertMessage(gcmMsg, raw);

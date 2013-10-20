@@ -47,7 +47,9 @@ public class GcmIntentService extends IntentService {
                 String raw = extras.getString("data");
                 GCMMsg gcmMsg = new GCMMsg(raw);
                 messageAsyncHandler.insertMessage(gcmMsg, raw);
-                sendNotification(gcmMsg);
+                if (gcmMsg.containsKey("notification")) {
+                    sendNotification(gcmMsg);
+                }
 
                 Log.i(TAG, "Received: " + extras.toString());
             }

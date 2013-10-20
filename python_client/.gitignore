@@ -1,3 +1,4 @@
 python-gcm
 config.json
 *pyc
+*sh

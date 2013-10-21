@@ -14,7 +14,7 @@ time_now = int(round(time.time() * 1000))
 gcm = GCM(config["API_KEY"])
 
 
-def createNotification(notificationKey=None, progress=None, vibrate=None, sound=None, priority=None):
+def get_notification(notificationKey=None, progress=None, vibrate=None, sound=None, priority=None):
     result = {}
     if notificationKey:
         result["notification-key"] = str(notificationKey)
@@ -23,19 +23,19 @@ def createNotification(notificationKey=None, progress=None, vibrate=None, sound=
     if vibrate:
         assert isinstance(vibrate, bool)
         result["vibrate"] = bool(vibrate)
-    if sound != None:
+    if sound is not None:
         assert isinstance(sound, bool)
         result["sound"] = bool(sound)
-    if priority != None:
+    if priority is not None:
         result["priority"] = int(priority)
     return result
 
 
-def createMsg(title, message=None, delay_while_idle=False, expires=None, icon=None, iconBackground=None,
-              collapseKey=None, notification=None, intent=None):
-    result = {"title": str(title)}
-    result["delay_while_idle"] = delay_while_idle
-    assert delay_while_idle != None
+def get_message(title, message=None, delay_while_idle=False, expires=None, icon=None, iconBackground=None,
+              collapse_key=None, notification=None, intent=None):
+    result = {"title": str(title),
+              "delay_while_idle": delay_while_idle}
+    assert delay_while_idle is not None
 
     if message:
         result["message"] = str(message)
@@ -47,8 +47,8 @@ def createMsg(title, message=None, delay_while_idle=False, expires=None, icon=No
         assert result["icon"] == "alert" or result["icon"] == "info"
     if iconBackground:
         result["icon-background"] = str(iconBackground)
-    if collapseKey:
-        result["collapse-key"] = str(collapseKey)
+    if collapse_key:
+        result["collapse-key"] = str(collapse_key)
     if notification:
         assert isinstance(notification, dict)
         result["notification"] = notification
@@ -58,64 +58,58 @@ def createMsg(title, message=None, delay_while_idle=False, expires=None, icon=No
     return result
 
 
-#msg = get_intent_message()
-in_two_minutes = 60 * 2
-msg = createMsg("This is a test 2!", message="This is much more detailed info",
-                delay_while_idle=False, #if true waits until device is woken up to recieve message.
-                expires=in_two_minutes,
-                #NB : expires is cleared on start (before showing content) + on push msg recieved. Meaning if you recieve an old message and nothing else, one can use adb backup to pull it directly from the database.
-                icon="alert", #alert/info for now. Default info
-                iconBackground="red",
-                #Supported : #RRGGBB #AARRGGBB 'red', 'blue', 'green', 'black', 'white', 'gray', 'cyan', 'magenta', 'yellow', 'lightgray', 'darkgray'
-                collapseKey="onlyShowThisTypeOnceInList", #only one of these events will show up in the app
-                notification=createNotification(
-                    notificationKey="onlyShowThisPopupOnce",
-                    #only one of these notifications will be shown, can be shared but don't have to be, note that the key in use will be this.hashCode()
-                    progress=10, #in %, if 0 considered indeterminate progress
-                    vibrate=True,
-                    sound=False,
-                    priority=2
-                    #min = -2, -1 = low prio, 0 = default, anything above = higher. See http://developer.android.com/reference/android/app/Notification.html
-                ),
-                intent={
-                    "type": "plain/text",
-                    "data": "anders@codebox.no",
-                    "packagename": "com.google.android.gm", #required
-                    "classname": "com.google.android.gm.ComposeActivityGmail", #required
-                    "extras": {
-                        "android.intent.extra.EMAIL": "anders@codebox.no",
-                        "android.intent.extra.SUBJECT": "Yeah this totally works!"
-                    }
-                }
-)
+def example():
+    in_two_minutes = 60 * 2
+    msg = get_message("This is a test 2!", message="This is much more detailed info",
+                    delay_while_idle=False,
+                    expires=in_two_minutes,
+                    icon="alert",
+                    iconBackground="red",
+                    collapse_key="onlyShowThisTypeOnceInList",
+                    notification=notification(
+                        notificationKey="onlyShowThisPopupOnce",
+                        progress=10,
+                        vibrate=True,
+                        sound=False,
+                        priority=2
+                    ),
+                    intent={
+                        "type": "plain/text",
+                        "data": "anders@codebox.no",
+                        "packagename": "com.google.android.gm",
+                        "classname": "com.google.android.gm.ComposeActivityGmail",
+                        "extras": {
+                            "android.intent.extra.EMAIL": "anders@codebox.no",
+                            "android.intent.extra.SUBJECT": "Yeah this totally works!"
+                        }
+                    })
+    return msg
 
 
-def sendMsg(msg, verbose=False):
+def send_message(message, verbose=False):
     if verbose:
         print "Sending:"
-        print json.dumps(msg, indent=4, sort_keys=True)
+        print json.dumps(message, indent=4, sort_keys=True)
 
     package = {}
-    delay_while_idle = msg["delay_while_idle"]
+    delay_while_idle = message["delay_while_idle"]
     time_to_live = None
 
-    if "expires" in msg:
-        time_to_live = (msg["expires"] - time_now) / 1000
-    del msg["delay_while_idle"]
+    if "expires" in message:
+        time_to_live = (message["expires"] - time_now) / 1000
+    del message["delay_while_idle"]
 
     collapse_key = None
-    if "collapse-key" in msg:
-        collapse_key = msg["collapse-key"]
+    if "collapse-key" in message:
+        collapse_key = message["collapse-key"]
 
-    package['data'] = json.dumps(msg)
-    print time_to_live
+    package['data'] = json.dumps(message)
     gcm.json_request(config["REGIDS"], data=package, collapse_key=collapse_key, time_to_live=time_to_live,
                      delay_while_idle=delay_while_idle)
 
 
 if __name__ == "__main__":
-    msg = createMsg("Simple message")
-    sendMsg(msg, verbose=True)
+    send_message(get_message("Simple message"), verbose=True)
 
 
 ##TODO : if payload too big we need to strip message to be max X chars. (and also possibly drop intent extras!)

@@ -40,8 +40,8 @@ def createMsg(title, message=None, delay_while_idle=False, expires=None, icon=No
     if message:
         result["message"] = str(message)
     if expires:
-        result["expires"] = int(expires)
-        result["expires"] = time_now + (result["expires"] * 1000)
+        #Convert to timestamp.
+        result["expires"] = time_now + (int(expires) * 1000)
     if icon:
         result["icon"] = str(icon)
         assert result["icon"] == "alert" or result["icon"] == "info"
@@ -100,7 +100,7 @@ def sendMsg(msg, verbose=False):
     time_to_live = None
 
     if "expires" in msg:
-        time_to_live = msg["expires"] - time_now
+        time_to_live = (msg["expires"] - time_now) / 1000
     del msg["delay_while_idle"]
 
     collapse_key = None
@@ -108,6 +108,7 @@ def sendMsg(msg, verbose=False):
         collapse_key = msg["collapse-key"]
 
     package['data'] = json.dumps(msg)
+    print time_to_live
     gcm.json_request(config["REGIDS"], data=package, collapse_key=collapse_key, time_to_live=time_to_live,
                      delay_while_idle=delay_while_idle)
 

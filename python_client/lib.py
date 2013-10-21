@@ -1,5 +1,8 @@
 #!/usr/bin/python
-import sys, os, time, json
+import sys
+import os
+import time
+import json
 #TODO : use full path for python-gcm
 gcm_dir = os.path.join(os.path.dirname(sys.argv[0]), "python-gcm")
 config_path = os.path.join(os.path.dirname(sys.argv[0]), "config.json")
@@ -14,10 +17,10 @@ time_now = int(round(time.time() * 1000))
 gcm = GCM(config["API_KEY"])
 
 
-def get_notification(notificationKey=None, progress=None, vibrate=None, sound=None, priority=None):
+def get_notification(notification_key=None, progress=None, vibrate=None, sound=None, priority=None):
     result = {}
-    if notificationKey:
-        result["notification-key"] = str(notificationKey)
+    if notification_key:
+        result["notification-key"] = str(notification_key)
     if progress:
         result["progress"] = int(progress)
     if vibrate:
@@ -31,8 +34,8 @@ def get_notification(notificationKey=None, progress=None, vibrate=None, sound=No
     return result
 
 
-def get_message(title, message=None, delay_while_idle=False, expires=None, icon=None, iconBackground=None,
-              collapse_key=None, notification=None, intent=None):
+def get_message(title, message=None, delay_while_idle=False, expires=None, icon=None,
+                icon_background=None, collapse_key=None, notification=None, intent=None):
     result = {"title": str(title),
               "delay_while_idle": delay_while_idle}
     assert delay_while_idle is not None
@@ -45,8 +48,8 @@ def get_message(title, message=None, delay_while_idle=False, expires=None, icon=
     if icon:
         result["icon"] = str(icon)
         assert result["icon"] == "alert" or result["icon"] == "info"
-    if iconBackground:
-        result["icon-background"] = str(iconBackground)
+    if icon_background:
+        result["icon-background"] = str(icon_background)
     if collapse_key:
         result["collapse-key"] = str(collapse_key)
     if notification:
@@ -61,28 +64,28 @@ def get_message(title, message=None, delay_while_idle=False, expires=None, icon=
 def example():
     in_two_minutes = 60 * 2
     msg = get_message("This is a test 2!", message="This is much more detailed info",
-                    delay_while_idle=False,
-                    expires=in_two_minutes,
-                    icon="alert",
-                    iconBackground="red",
-                    collapse_key="onlyShowThisTypeOnceInList",
-                    notification=notification(
-                        notificationKey="onlyShowThisPopupOnce",
-                        progress=10,
-                        vibrate=True,
-                        sound=False,
-                        priority=2
-                    ),
-                    intent={
-                        "type": "plain/text",
-                        "data": "anders@codebox.no",
-                        "packagename": "com.google.android.gm",
-                        "classname": "com.google.android.gm.ComposeActivityGmail",
-                        "extras": {
-                            "android.intent.extra.EMAIL": "anders@codebox.no",
-                            "android.intent.extra.SUBJECT": "Yeah this totally works!"
-                        }
-                    })
+                      delay_while_idle=False,
+                      expires=in_two_minutes,
+                      icon="alert",
+                      icon_background="red",
+                      collapse_key="onlyShowThisTypeOnceInList",
+                      notification=get_notification(
+                          notification_key="onlyShowThisPopupOnce",
+                          progress=10,
+                          vibrate=True,
+                          sound=False,
+                          priority=2
+                      ),
+                      intent={
+                          "type": "plain/text",
+                          "data": "anders@codebox.no",
+                          "packagename": "com.google.android.gm",
+                          "classname": "com.google.android.gm.ComposeActivityGmail",
+                          "extras": {
+                              "android.intent.extra.EMAIL": "anders@codebox.no",
+                              "android.intent.extra.SUBJECT": "Yeah this totally works!"
+                          }
+                      })
     return msg
 
 

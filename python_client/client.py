@@ -33,11 +33,11 @@ if args.delay_while_idle is not None:
 
 notification = None
 if not args.noNotification:
-    notification = lib.get_notification(notificationKey=args.notificationKey, progress=args.progress,
+    notification = lib.get_notification(notification_key=args.notificationKey, progress=args.progress,
                                         vibrate=args.vibrate, sound=args.sound, priority=args.priority)
 
 msg = lib.get_message(args.title, message=args.message, delay_while_idle=delay_while_idle, expires=args.expires,
-                      icon=args.icon, iconBackground=args.iconBackground, collapse_key=args.collapseKey,
+                      icon=args.icon, icon_background=args.iconBackground, collapse_key=args.collapseKey,
                       notification=notification)
 print msg
 lib.send_message(msg)

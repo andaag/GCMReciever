@@ -25,17 +25,20 @@ public class HeartbeatAlarmReciever extends BroadcastReceiver {
                 long interval = cursor.getLong(1);
                 long lastseen = cursor.getLong(2);
                 long nextAlarm = lastheartbeat + (interval * 1000);
-                if (lastseen > nextAlarm) {
-                    continue;
-                }
                 String heartbeat = cursor.getString(3);
 
                 Intent intent = new Intent(context, HeartbeatAlarmReciever.class);
                 intent.putExtra("heartbeat", heartbeat);
-                PendingIntent pendingIntent = PendingIntent.getBroadcast(context, 0, intent, 0);
+                PendingIntent pendingIntent = PendingIntent.getBroadcast(context, heartbeat.hashCode(), intent, 0);
                 alarmManager.cancel(pendingIntent);
 
-                Log.d(TAG, "Setting alarm in " + nextAlarm + " (current time " + System.currentTimeMillis() + ")");
+                if (lastseen > nextAlarm) {
+                    Log.d(TAG, "Recently seen notification for " + heartbeat + " skipping notification");
+                    continue;
+                }
+
+
+                Log.d(TAG, "Setting alarm for " + heartbeat + " in " + nextAlarm + " (current time " + System.currentTimeMillis() + ")");
                 alarmManager.set(AlarmManager.RTC, nextAlarm, pendingIntent);
             }
         } finally {

@@ -20,10 +20,13 @@ notificationParser = parser.add_argument_group('Notifications')
 notificationParser.add_argument('--notificationKey', nargs='?',
                                 help='Only one of these notifications will be visible at the time (can be same as collapseKey)')
 notificationParser.add_argument('--progress', nargs='?', help='0-100, 0 = indeterminate progress')
-notificationParser.add_argument('--vibrate', nargs='?', help='only one of these events will show up in the app')
-notificationParser.add_argument('--sound', nargs='?', help='only one of these events will show up in the app')
+notificationParser.add_argument('--vibrate', help='Enable notification vibrate', action='store_true')
+notificationParser.add_argument('--noSound', help='Disable notification sound', action='store_false')
 notificationParser.add_argument('--priority', nargs='?',
                                 help='-1 = low prio, 0 = default, anything above = higher. See http://developer.android.com/reference/android/app/Notification.html')
+
+#todo : on expire in app we need to also expire the notification
+#todo : if sending fails, queue and resend? (and or write to log that something FATAL happened!)
 
 args = parser.parse_args()
 
@@ -34,7 +37,7 @@ if args.delay_while_idle is not None:
 notification = None
 if not args.noNotification:
     notification = lib.get_notification(notification_key=args.notificationKey, progress=args.progress,
-                                        vibrate=args.vibrate, sound=args.sound, priority=args.priority)
+                                        vibrate=args.vibrate, sound=args.noSound, priority=args.priority)
 
 msg = lib.get_message(args.title, message=args.message, delay_while_idle=delay_while_idle, expires=args.expires,
                       icon=args.icon, icon_background=args.iconBackground, collapse_key=args.collapseKey,

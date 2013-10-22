@@ -1,4 +1,5 @@
 #!/usr/bin/python
+import random
 import sys
 import os
 import time
@@ -15,6 +16,10 @@ from gcm import GCM
 config = json.loads(open(config_path, "r").read())
 time_now = int(round(time.time() * 1000))
 gcm = GCM(config["API_KEY"])
+
+
+def log(loglevel, logmessage):
+    print loglevel, logmessage
 
 
 def get_notification(notification_key=None, progress=None, vibrate=None, sound=None, priority=None):
@@ -89,6 +94,27 @@ def example():
     return msg
 
 
+def trim_message(message):
+    maxsize = 4000 #cutting off 96 bytes here for safety.
+    if len(json.dumps(message)) < maxsize:
+        return message
+    if "intent" in message and len(message["intent"]) > 500:
+        log("WARN", "Payload too big, deleting intent")
+        del message["intent"]
+    if len(json.dumps(message)) < maxsize:
+        return message
+    log("WARN", "Payload too big, stripping message length")
+
+    msg_size = len(message["message"])
+    pkg_size = len(json.dumps(message)) - msg_size
+    assert pkg_size - msg_size < maxsize
+
+    msg_size = min(maxsize - pkg_size, msg_size)
+    message["message"] = message["message"][0:msg_size] + "..."
+    assert len(json.dumps(message)) < maxsize
+    return message
+
+
 def send_message(message, verbose=False):
     if verbose:
         print "Sending:"
@@ -100,13 +126,16 @@ def send_message(message, verbose=False):
 
     if "expires" in message:
         time_to_live = (message["expires"] - time_now) / 1000
+        if "collapse-key" not in message:
+            #expires require collapse-key
+            message["collapse-key"] = str(random.random())
     del message["delay_while_idle"]
 
     collapse_key = None
     if "collapse-key" in message:
         collapse_key = message["collapse-key"]
 
-    package['data'] = json.dumps(message)
+    package['data'] = json.dumps(trim_message(message))
     gcm.json_request(config["REGIDS"], data=package, collapse_key=collapse_key, time_to_live=time_to_live,
                      delay_while_idle=delay_while_idle)
 

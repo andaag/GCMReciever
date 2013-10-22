@@ -16,6 +16,7 @@ import android.widget.Toast;
 import com.squareup.otto.Bus;
 import com.squareup.otto.Subscribe;
 import no.codebox.gcmreciever.adapter.MessageAdapter;
+import no.codebox.gcmreciever.db.HeartbeatAsyncHandler;
 import no.codebox.gcmreciever.db.MessageContentProvider;
 import no.codebox.gcmreciever.events.LogMessage;
 import no.codebox.gcmreciever.events.RegisterEvent;
@@ -44,6 +45,7 @@ public class MainActivity extends Activity implements LoaderManager.LoaderCallba
         messageAdapter = new MessageAdapter(this);
         listView.setAdapter(messageAdapter);
         listView.setOnItemClickListener(this);
+        new HeartbeatAsyncHandler(getContentResolver()).updateLastseen();
     }
 
     @Override

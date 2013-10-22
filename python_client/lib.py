@@ -39,8 +39,12 @@ def get_notification(notification_key=None, progress=None, vibrate=None, sound=N
     return result
 
 
+def get_heartbeat(key, interval):
+    return {"key": key, "interval": int(interval)}
+
+
 def get_message(title, message=None, delay_while_idle=False, expires=None, icon=None,
-                icon_background=None, collapse_key=None, notification=None, intent=None):
+                icon_background=None, collapse_key=None, notification=None, intent=None, heartbeat=None):
     result = {"title": str(title),
               "delay_while_idle": delay_while_idle}
     assert delay_while_idle is not None
@@ -63,6 +67,10 @@ def get_message(title, message=None, delay_while_idle=False, expires=None, icon=
     if intent:
         assert isinstance(intent, dict)
         result["intent"] = intent
+    if heartbeat:
+        assert isinstance(heartbeat, dict)
+        result["heartbeat"] = heartbeat
+
     return result
 
 

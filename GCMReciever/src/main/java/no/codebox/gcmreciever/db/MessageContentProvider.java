@@ -4,6 +4,7 @@ import android.content.ContentProvider;
 import android.content.ContentValues;
 import android.content.UriMatcher;
 import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.util.Log;
 
@@ -13,7 +14,7 @@ public class MessageContentProvider extends ContentProvider {
     private static final String AUTHORITY = "no.codebox.gcmreciever.db.MessageContentProvider";
     private static final String MESSAGES_BASE_PATH = "messages";
 
-    private static final int MESSAGES_ID = 100;
+    private static final int MESSAGES = 100;
     private static final int MESSAGE_ID = 101;
 
     public static final Uri CONTENT_URI = Uri.parse("content://" + AUTHORITY
@@ -22,15 +23,15 @@ public class MessageContentProvider extends ContentProvider {
     private static final UriMatcher sURIMatcher = new UriMatcher(UriMatcher.NO_MATCH);
 
     static {
-        sURIMatcher.addURI(AUTHORITY, MESSAGES_BASE_PATH, MESSAGES_ID);
+        sURIMatcher.addURI(AUTHORITY, MESSAGES_BASE_PATH, MESSAGES);
         sURIMatcher.addURI(AUTHORITY, MESSAGES_BASE_PATH + "/#", MESSAGE_ID);
     }
 
-    private MessageSqliteDb db;
+    private GCMSqliteDb db;
 
     @Override
     public boolean onCreate() {
-        db = new MessageSqliteDb(getContext());
+        db = new GCMSqliteDb(getContext());
         return true;
     }
 
@@ -39,7 +40,7 @@ public class MessageContentProvider extends ContentProvider {
                         String[] selectionArgs, String sortOrder) {
         int uriType = sURIMatcher.match(uri);
         switch (uriType) {
-            case MESSAGES_ID:
+            case MESSAGES:
                 trimDb();
                 Cursor cursor = db.getReadableDatabase().query("messages", projection, selection, selectionArgs, null, null, sortOrder);
                 cursor.setNotificationUri(getContext().getContentResolver(), uri);
@@ -68,8 +69,8 @@ public class MessageContentProvider extends ContentProvider {
         int uriType = sURIMatcher.match(uri);
         trimDb();
         switch (uriType) {
-            case MESSAGES_ID:
-                long insertId = db.insert(contentValues);
+            case MESSAGES:
+                long insertId = db.insert("messages", contentValues);
                 if (insertId != 0) {
                     getContext().getContentResolver().notifyChange(uri, null);
                     return Uri.withAppendedPath(CONTENT_URI, String.valueOf(insertId));

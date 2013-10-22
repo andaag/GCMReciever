@@ -25,7 +25,13 @@ notificationParser.add_argument('--noSound', help='Disable notification sound', 
 notificationParser.add_argument('--priority', nargs='?',
                                 help='-1 = low prio, 0 = default, anything above = higher. See http://developer.android.com/reference/android/app/Notification.html')
 
-#todo : on expire in app we need to also expire the notification
+##Heartbeats
+notificationParser = parser.add_argument_group('Heartbeats')
+notificationParser.add_argument('--heartbeat', nargs='?',
+                                help='a key to identify this unique heartbeat')
+notificationParser.add_argument('--interval', nargs='?',
+                                help='Interval in seconds on how often this heartbeat is expected (ommited/0 = disable heartbeat)')
+
 #todo : if sending fails, queue and resend? (and or write to log that something FATAL happened!)
 
 args = parser.parse_args()
@@ -39,8 +45,12 @@ if not args.noNotification:
     notification = lib.get_notification(notification_key=args.notificationKey, progress=args.progress,
                                         vibrate=args.vibrate, sound=args.noSound, priority=args.priority)
 
+heartbeat = None
+if args.heartbeat:
+    heartbeat = lib.get_heartbeat(args.heartbeat, args.interval)
+
 msg = lib.get_message(args.title, message=args.message, delay_while_idle=delay_while_idle, expires=args.expires,
                       icon=args.icon, icon_background=args.iconBackground, collapse_key=args.collapseKey,
-                      notification=notification)
+                      notification=notification, heartbeat=heartbeat)
 print msg
 lib.send_message(msg)

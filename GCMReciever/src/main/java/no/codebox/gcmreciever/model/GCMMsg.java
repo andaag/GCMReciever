@@ -7,12 +7,36 @@ import java.util.Random;
 import android.content.res.Resources;
 import android.graphics.Color;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import no.codebox.gcmreciever.helpers.HashReader;
 import no.codebox.gcmreciever.helpers.JsonParser;
 
 public class GCMMsg {
-    private static final Random random = new Random();
     private final Map<String, Object> raw;
+
+    public static GCMMsg createHeartbeatMsg(String heartbeatKey) {
+        Map<String, Object> raw = new HashMap<String, Object>();
+        raw.put("title", "Heartbeat failure!");
+        raw.put("message", "No heartbeat recieved from " + heartbeatKey);
+        raw.put("notification", createNotification(true, true, 100));
+        raw.put("icon", "alert");
+        raw.put("icon-background", "red");
+        return new GCMMsg(raw);
+    }
+
+    private static Map<String, Object> createNotification(boolean vibrate, boolean sound, int priority) {
+        Map<String, Object> raw = new HashMap<String, Object>();
+        raw.put("vibrate", vibrate);
+        raw.put("sound", sound);
+        raw.put("priority", priority);
+        return raw;
+    }
+
+    private GCMMsg(Map<String, Object> raw) {
+        this.raw = raw;
+    }
 
     public GCMMsg(String data) {
         Map<String, Object> raw;
@@ -66,6 +90,14 @@ public class GCMMsg {
         return r.getColor(android.R.color.holo_orange_light);
     }
 
+    public boolean isHeartbeat() {
+        return raw.containsKey("heartbeat");
+    }
+
+    public Number getHeartbeatInterval() {
+        return HashReader.getNumber((Map) raw.get("heartbeat"), "interval", 0);
+    }
+
     public String getNotificationString(String key, String defaultValue) {
         return HashReader.getString((Map) raw.get("notification"), key, defaultValue);
     }
@@ -77,7 +109,6 @@ public class GCMMsg {
     public boolean getNotificationBoolean(String key, boolean defaultValue) {
         return HashReader.getBoolean((Map) raw.get("notification"), key, defaultValue);
     }
-
 
     public String getIntentString(String key, String defaultValue) {
         return HashReader.getString((Map) raw.get("intent"), key, defaultValue);
@@ -94,7 +125,7 @@ public class GCMMsg {
     public int getNotificationKey() {
         String key = getNotificationString("notification-key", null);
         if (key == null) {
-            return random.nextInt();
+            return new Random().nextInt();
         }
         return key.hashCode();
     }
@@ -108,7 +139,29 @@ public class GCMMsg {
         return raw.containsKey(key);
     }
 
+    public void prependMessage(String s) {
+        if (getMessage() != null) {
+            s = s + "\n" + getMessage();
+        }
+        raw.put("message", s);
+    }
+
+    public String getHeartbeatKey() {
+        return HashReader.getString((Map) raw.get("heartbeat"), "key", null);
+    }
+
     public Object getRaw(String key) {
         return raw.get(key);
     }
+
+    public String toJson() throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+        return mapper.writeValueAsString(raw);
+    }
+
+    @Override
+    public String toString() {
+        return "GCMMsg:" + getTitle();
+    }
+
 }

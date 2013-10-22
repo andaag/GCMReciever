@@ -47,7 +47,14 @@
         <provider
                 android:authorities="no.codebox.gcmreciever.db.MessageContentProvider"
                 android:exported="false"
-                android:name="no.codebox.gcmreciever.db.MessageContentProvider"></provider>
+                android:name="no.codebox.gcmreciever.db.MessageContentProvider"/>
+
+        <provider
+                android:authorities="no.codebox.gcmreciever.db.HeartbeatContentProvider"
+                android:exported="false"
+                android:name="no.codebox.gcmreciever.db.HeartbeatContentProvider"/>
+
+        <receiver android:process=":remote" android:name=".heartbeat.HeartbeatAlarmReciever"/>
 
 
     </application>

@@ -1,5 +1,7 @@
 package no.codebox.gcmreciever.db;
 
+import java.util.Locale;
+
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
@@ -16,6 +18,12 @@ public class GCMSqliteDb extends SQLiteOpenHelper {
             "timestamp INTEGER, heartbeat TEXT UNIQUE NOT NULL, interval INTEGER NOT NULL, lastheartbeat INTEGER NOT NULL, lastseen INTEGER);";
     public GCMSqliteDb(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
+    }
+
+    @Override
+    public void onOpen(SQLiteDatabase db) {
+        db.setLocale(Locale.ENGLISH);
+        super.onOpen(db);
     }
 
     @Override
